@@ -26,6 +26,7 @@ else
 
 decimal relativeDiscount = builder.Configuration.GetValue<decimal>("Discounts:RelativeDiscount", 0);
 
+builder.Services.AddScoped<IDiscount>(_ => RelativeDiscount.Create(relativeDiscount));
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
