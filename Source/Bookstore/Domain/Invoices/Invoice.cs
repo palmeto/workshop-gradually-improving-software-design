@@ -12,6 +12,8 @@ public abstract class Invoice
     protected Invoice(InvoiceRecord representation) => Representation = representation;
 
     public Guid Id => this.Representation.Id;
+    public Guid CustomerId => this.Representation.Customer.Id;
+    public Customer Customer => this.Representation.Customer;
     public string Label => this.Representation.Customer.Label;
     public DateOnly IssueDate => DateOnly.FromDateTime(this.Representation.IssueTime);
     public Money Total => this.Representation.Lines

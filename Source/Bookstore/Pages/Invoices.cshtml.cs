@@ -18,6 +18,7 @@ public class InvoicesModel : PageModel
     private readonly InvoiceFactory _invoiceFactory;
 
     public IEnumerable<InvoiceRow> Invoices { get; private set; } = Enumerable.Empty<InvoiceRow>();
+    public IReadOnlyList<DueNotification> DelinquentNotifications { get; private set; } = Enumerable.Empty<InvoiceRow>();
 
     public InvoicesModel(ILogger<IndexModel> logger, BookstoreDbContext context, IDataSeed<InvoiceRecord> invoicesSeed, InvoiceFactory invoiceFactory) => 
         (_logger, _context, _invoicesSeed, _invoiceFactory) = (logger, context, invoicesSeed, invoiceFactory);
@@ -26,6 +27,7 @@ public class InvoicesModel : PageModel
     {
         await _invoicesSeed.SeedAsync();
         await PopulateInvoices();
+        await PopulateDelinquentCustomers();
     }
 
     public async Task<IActionResult> OnPost(Guid invoiceId)
@@ -61,6 +63,22 @@ public class InvoicesModel : PageModel
             invoice.IssueDate.ToString("MM/dd/yyyy"),
             $"{invoice.Status.prefix} {invoice.Status.date}",
             invoice.Total, ToStyle(invoice), invoice is UnpaidInvoice);
+    private async Task PopulateDelinquentCustomers()
+    {
+        IEnumerable<Invoice> invoices = await GetDelinquentInvoices();
+        invoices.GroupBy(invoice => invoice.CustomerId)
+            .Select(group => new DueNotification(group.First().Customer, group.Aggregate(Money.Zero, (total, invoice) => total +invoice.Total)));
+    }
+
+    private async Task<IEnumerable<Invoice>> GetDelinquentInvoices()
+    {
+        return (await _context.Invoices
+           .Include(invoice => invoice.Customer)
+           .Include(invoice => invoice.Lines)
+           .OrderBy(invoice => invoice.IssueTime)
+           .Where(_invoiceFactory.DelinquentInvoiceTest)
+           .ToListAsync()).Select(_invoiceFactory.ToModel);
+    }
 
     private static string ToStyle(Invoice invoice) =>
         invoice.GetType().Name.Replace("Invoice", "").ToLower();
