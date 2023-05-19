@@ -15,4 +15,8 @@ public static class BookSpecifications
 
     public static IQueryable<Book> ByTitle(this IQueryable<Book> books, string title) =>
         books.Where(book => book.Title == title);
+  public static IQueryable<Book> FilterByAuthorInitial(this IQueryable<Book> books, string? initial) =>
+        
+        string.IsNullOrEmpty(initial)? books:books.Where(book => book.AuthorsCollection.Any(author => author.Person.LastName.StartsWith(initial)));
+
 }

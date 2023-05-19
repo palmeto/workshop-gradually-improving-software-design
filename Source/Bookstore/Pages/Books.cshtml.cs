@@ -21,9 +21,9 @@ public class BooksModel : PageModel
         _booksSeed = booksSeed;
     }
 
-    public async Task OnGet()
+    public async Task OnGet([FromQuery]string? authorInitial)
     {
         await this._booksSeed.SeedAsync();
-        this.Books = await _dbContext.Books.GetBooks().OrderBy(book => book.Title).ToListAsync();
+        this.Books = await _dbContext.Books.GetBooks().FilterByAuthorInitial(authorInitial).OrderBy(book => book.Title).ToListAsync();
     }
 }
